@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: work-manager
+    env: node
+    plan: free
+    buildCommand: ""
+    startCommand: "npm start"
+    envVars:
+      - key: NODE_VERSION
+        value: 20
