@@ -8,17 +8,44 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const DB_PATH = path.join(__dirname, "data", "db.json");
 const UPLOAD_DIR = path.join(__dirname, "uploads");
 
-const seed = {
-  users: [
-    { id: "cypher", password: "chinni_bangaramm", name: "Cypher", role: "admin" },
-    { id: "jaguar", password: "ammu_kutty", name: "Jaguar", role: "member" }
-  ],
+function verifiedUsers() {
+  if (process.env.VERIFIED_USERS_JSON) {
+    try {
+      return JSON.parse(process.env.VERIFIED_USERS_JSON);
+    } catch (error) {
+      console.warn("Invalid VERIFIED_USERS_JSON, using individual env vars.");
+    }
+  }
+
+  return [
+    {
+      id: process.env.ADMIN_ID || "cypher",
+      password: process.env.ADMIN_PASSWORD || "change-me-admin",
+      name: process.env.ADMIN_NAME || "Cypher",
+      role: "admin"
+    },
+    {
+      id: process.env.MEMBER_ID || "jaguar",
+      password: process.env.MEMBER_PASSWORD || "change-me-member",
+      name: process.env.MEMBER_NAME || "Jaguar",
+      role: "member"
+    }
+  ];
+}
+
+function createSeed() {
+  const users = verifiedUsers();
+  const adminId = users[0]?.id || "cypher";
+  const memberId = users[1]?.id || "jaguar";
+
+  return {
+  users,
   stickyNotes: [
     {
       id: "note-1",
       title: "Welcome checklist",
       body: "Check announcements, meeting reminders, and inbox before starting work.",
-      ownerId: "cypher",
+      ownerId: adminId,
       audience: "everyone",
       statuses: {},
       createdAt: new Date().toISOString()
@@ -29,7 +56,7 @@ const seed = {
       id: "ann-1",
       title: "Work manager is live",
       body: "Use this space for team-wide updates and important notices.",
-      authorId: "cypher",
+      authorId: adminId,
       createdAt: new Date().toISOString()
     }
   ],
@@ -39,15 +66,15 @@ const seed = {
       title: "Daily sync",
       link: "https://meet.google.com/",
       scheduledAt: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-      ownerId: "cypher",
+      ownerId: adminId,
       createdAt: new Date().toISOString()
     }
   ],
   inbox: [
     {
       id: "msg-1",
-      to: "jaguar",
-      from: "cypher",
+      to: memberId,
+      from: adminId,
       subject: "Welcome",
       body: "Your work dashboard is ready.",
       read: false,
@@ -64,12 +91,13 @@ const seed = {
   ],
   chats: []
 };
+}
 
 function ensureDb() {
   const dataDir = path.dirname(DB_PATH);
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-  if (!fs.existsSync(DB_PATH)) fs.writeFileSync(DB_PATH, JSON.stringify(seed, null, 2));
+  if (!fs.existsSync(DB_PATH)) fs.writeFileSync(DB_PATH, JSON.stringify(createSeed(), null, 2));
   migrateSubjectFileStorage();
 }
 
