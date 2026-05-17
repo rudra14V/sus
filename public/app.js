@@ -7,6 +7,7 @@ const state = {
   sidebarOpen: false,
   selectedSubject: "OS",
   selectedFolderId: "",
+  selectedFolderName: "Main folder",
   selectedVideoSubject: "OS",
   selectedVideoFolderId: ""
 };
@@ -64,11 +65,18 @@ function renderLogin() {
   app.innerHTML = `
     <main class="login-night">
       <section class="login-shell">
+        <section class="login-profiles" id="loginProfiles" aria-hidden="true">
+          <div class="fist-bump">
+            <div class="energy-image"></div>
+            <div class="fist-label fist-label-cypher">Cypher</div>
+            <div class="fist-label fist-label-jaguar">Jaguar</div>
+            <div class="image-flash"></div>
+            <div class="image-shockwave"></div>
+          </div>
+        </section>
         <form class="login-card" id="loginForm">
           <section class="login-fields">
             <span class="eyebrow">Work Manager</span>
-            <h2>Sign in to your night shift</h2>
-            <p class="muted">Verified IDs are issued by the administrator.</p>
             <label class="field">
               Verified ID
               <input name="userId" id="loginUserId" autocomplete="username" placeholder="Enter verified ID" required />
@@ -86,14 +94,14 @@ function renderLogin() {
   `;
 
   document.querySelector("#loginUserId").addEventListener("input", event => {
-    const form = document.querySelector("#loginForm");
+    const profiles = document.querySelector("#loginProfiles");
     const value = event.target.value.trim().toLowerCase();
-    form.classList.remove("point-girl", "point-boy");
+    profiles.classList.remove("show-cypher", "show-jaguar");
     if ("cypher".startsWith(value) && value) {
-      form.classList.add("point-girl");
+      profiles.classList.add("show-cypher");
     }
     if ("jaguar".startsWith(value) && value) {
-      form.classList.add("point-boy");
+      profiles.classList.add("show-jaguar");
     }
   });
 
@@ -294,78 +302,68 @@ function renderNotesPage() {
 
 function renderSubjectNotesPage() {
   const subjects = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS"];
-  const folders = (state.data.subjectFolders || []).filter(folder => folder.subject === state.selectedSubject);
-  const folderExists = folders.some(folder => folder.id === state.selectedFolderId);
-  if (state.selectedFolderId && !folderExists) state.selectedFolderId = "";
-  const files = (state.data.subjectFiles || []).filter(file => {
-    const fileFolderId = file.folderId || "";
-    return file.subject === state.selectedSubject && fileFolderId === state.selectedFolderId;
-  });
-  const currentFolder = folders.find(folder => folder.id === state.selectedFolderId);
-  const folderLabel = currentFolder ? currentFolder.name : "Main folder";
   layout(`
-    ${pageTitle("Subject Notes", "Choose a subject, view stored files, or add PDFs, images, audio, video, and other media.", "notes")}
-    <section class="subject-layout">
-      <div class="panel">
-        <div class="section-head">
-          <h2>Subjects</h2>
-        </div>
-        <div class="subject-list">
-          ${subjects.map(subject => `<button class="subject-button ${state.selectedSubject === subject ? "active" : ""}" data-subject="${subject}">${subject}</button>`).join("")}
+    ${pageTitle("Subject Notes", "Choose a subject folder.", "notes")}
+    <section class="subject-folder-grid">
+      ${subjects.map(subject => renderSubjectTile(subject)).join("")}
+    </section>
+  `);
+  bindCommonRoutes();
+  document.querySelectorAll("[data-open-subject]").forEach(button => {
+    button.addEventListener("click", () => {
+      state.selectedSubject = button.dataset.openSubject;
+      state.selectedFolderId = "";
+      setRoute("subjectFiles");
+    });
+  });
+}
+
+function renderSubjectTile(subject) {
+  const folderCount = (state.data.subjectFolders || []).filter(folder => folder.subject === subject).length;
+  const fileCount = (state.data.subjectFiles || []).filter(file => file.subject === subject).length;
+  return `
+    <button class="subject-tile" data-open-subject="${subject}">
+      <span class="folder-icon"></span>
+      <strong>${escapeHtml(subject)}</strong>
+      <small>${folderCount} folder${folderCount === 1 ? "" : "s"} • ${fileCount} file${fileCount === 1 ? "" : "s"}</small>
+    </button>
+  `;
+}
+
+function renderSubjectFilesPage() {
+  const folders = (state.data.subjectFolders || []).filter(folder => folder.subject === state.selectedSubject);
+  layout(`
+    ${pageTitle(`${escapeHtml(state.selectedSubject)} Folders`, "Choose a folder to view its files.", "subjectNotes")}
+    <section class="panel">
+      <div class="section-head">
+        <h2>Folders</h2>
+        <div class="action-row no-margin">
+          <button class="ghost" id="openFolderForm">New folder</button>
         </div>
       </div>
-      <div class="panel">
-        <div class="section-head">
-          <div>
-            <h2>${escapeHtml(state.selectedSubject)} Files</h2>
-            <p class="muted">${escapeHtml(folderLabel)} • ${files.length} stored item${files.length === 1 ? "" : "s"}</p>
-          </div>
-          <div class="action-row no-margin">
-            <button class="ghost" id="openFolderForm">New folder</button>
-            <button class="primary" id="openUpload">Add file</button>
-          </div>
-        </div>
-        <form class="upload-form" id="folderForm">
-          <label class="field">Folder name<input name="name" placeholder="Example: Unit 1" required /></label>
-          <button class="primary" type="submit">Create folder</button>
-        </form>
-        <div class="folder-strip">
-          <button class="folder-button ${state.selectedFolderId === "" ? "active" : ""}" data-folder="">Main folder</button>
-          ${folders.map(renderFolderButton).join("")}
-        </div>
-        <form class="upload-form" id="uploadForm">
-          <label class="field">Title<input name="title" placeholder="Optional display name" /></label>
-          <label class="field">File<input name="file" type="file" accept="application/pdf,image/*,audio/*,video/*,*/*" required /></label>
-          <button class="primary" type="submit">Save file</button>
-        </form>
-        <div class="file-grid">
-          ${files.map(renderSubjectFile).join("") || `<div class="empty">No files stored in ${escapeHtml(state.selectedSubject)} yet.</div>`}
-        </div>
+      <form class="upload-form" id="folderForm">
+        <label class="field">Folder name<input name="name" placeholder="Example: Unit 1" required /></label>
+        <button class="primary" type="submit">Create folder</button>
+      </form>
+      <div class="folder-tile-grid">
+        <button class="folder-tile ${state.selectedFolderId === "" ? "active" : ""}" data-folder="" data-folder-name="Main folder">
+          <span class="folder-icon"></span>
+          <strong>Main folder</strong>
+        </button>
+        ${folders.map(renderFolderTile).join("")}
       </div>
     </section>
   `);
   bindCommonRoutes();
-  document.querySelectorAll("[data-subject]").forEach(button => {
-    button.addEventListener("click", () => {
-      state.selectedSubject = button.dataset.subject;
-      state.selectedFolderId = "";
-      renderSubjectNotesPage();
-    });
-  });
   document.querySelectorAll("[data-folder]").forEach(button => {
     button.addEventListener("click", () => {
       state.selectedFolderId = button.dataset.folder;
-      renderSubjectNotesPage();
+      state.selectedFolderName = button.dataset.folderName || "Main folder";
+      setRoute("folderFiles");
     });
-  });
-  document.querySelector("#openUpload").addEventListener("click", () => {
-    document.querySelector("#uploadForm").classList.toggle("open");
   });
   document.querySelector("#openFolderForm").addEventListener("click", () => {
     document.querySelector("#folderForm").classList.toggle("open");
-  });
-  document.querySelectorAll("[data-delete-file]").forEach(button => {
-    button.addEventListener("click", () => deleteSubjectFile(button.dataset.deleteFile));
   });
   document.querySelectorAll("[data-delete-folder]").forEach(button => {
     button.addEventListener("click", event => {
@@ -373,18 +371,60 @@ function renderSubjectNotesPage() {
       deleteSubjectFolder(button.dataset.deleteFolder);
     });
   });
-  document.querySelector("#uploadForm").addEventListener("submit", submitSubjectFile);
   document.querySelector("#folderForm").addEventListener("submit", submitSubjectFolder);
 }
 
-function renderFolderButton(folder) {
+function renderFolderTile(folder) {
   const canDelete = folder.ownerId === state.user.id;
+  const fileCount = (state.data.subjectFiles || []).filter(file => file.folderId === folder.id).length;
   return `
-    <button class="folder-button ${state.selectedFolderId === folder.id ? "active" : ""}" data-folder="${folder.id}">
-      <span>${escapeHtml(folder.name)}</span>
+    <button class="folder-tile ${state.selectedFolderId === folder.id ? "active" : ""}" data-folder="${folder.id}" data-folder-name="${escapeHtml(folder.name)}">
+      <span class="folder-icon"></span>
+      <strong>${escapeHtml(folder.name)}</strong>
+      <small>${fileCount} file${fileCount === 1 ? "" : "s"}</small>
       ${canDelete ? `<span class="folder-delete" data-delete-folder="${folder.id}" title="Delete folder">×</span>` : ""}
     </button>
   `;
+}
+
+function renderFolderFilesPage() {
+  const folders = (state.data.subjectFolders || []).filter(folder => folder.subject === state.selectedSubject);
+  const currentFolder = folders.find(folder => folder.id === state.selectedFolderId);
+  if (state.selectedFolderId && !currentFolder) {
+    state.selectedFolderId = "";
+    state.selectedFolderName = "Main folder";
+  } else {
+    state.selectedFolderName = currentFolder ? currentFolder.name : "Main folder";
+  }
+  const files = (state.data.subjectFiles || []).filter(file => {
+    const fileFolderId = file.folderId || "";
+    return file.subject === state.selectedSubject && fileFolderId === state.selectedFolderId;
+  });
+  layout(`
+    ${pageTitle(`${escapeHtml(state.selectedFolderName)}`, `${escapeHtml(state.selectedSubject)} • ${files.length} stored item${files.length === 1 ? "" : "s"}`, "subjectFiles")}
+    <section class="panel">
+      <div class="section-head">
+        <h2>Files</h2>
+        <button class="primary" id="openUpload">Add file</button>
+      </div>
+      <form class="upload-form" id="uploadForm">
+        <label class="field">Title<input name="title" placeholder="Optional display name" /></label>
+        <label class="field">Files<input name="file" type="file" accept="application/pdf,image/*,audio/*,video/*,*/*" multiple required /></label>
+        <button class="primary" type="submit">Save files</button>
+      </form>
+      <div class="file-grid">
+        ${files.map(renderSubjectFile).join("") || `<div class="empty">No files stored in this folder yet.</div>`}
+      </div>
+    </section>
+  `);
+  bindCommonRoutes();
+  document.querySelector("#openUpload").addEventListener("click", () => {
+    document.querySelector("#uploadForm").classList.toggle("open");
+  });
+  document.querySelectorAll("[data-delete-file]").forEach(button => {
+    button.addEventListener("click", () => deleteSubjectFile(button.dataset.deleteFile));
+  });
+  document.querySelector("#uploadForm").addEventListener("submit", submitSubjectFile);
 }
 
 function renderSubjectFile(file) {
@@ -717,31 +757,34 @@ async function submitSubjectFile(event) {
   submitButton.disabled = true;
   submitButton.textContent = "Saving...";
   const form = new FormData(event.currentTarget);
-  const file = form.get("file");
-  if (!file || !file.name) {
+  const files = form.getAll("file").filter(file => file && file.name);
+  if (!files.length) {
     submitButton.disabled = false;
-    submitButton.textContent = "Save file";
+    submitButton.textContent = "Save files";
     return;
   }
   try {
-    const dataUrl = await fileToDataUrl(file);
-    await api("/api/subject-files", {
-      method: "POST",
-      body: JSON.stringify({
-        subject: state.selectedSubject,
-        folderId: state.selectedFolderId,
-        title: form.get("title") || file.name,
-        fileName: file.name,
-        mimeType: file.type || "application/octet-stream",
-        dataUrl
+    const title = form.get("title");
+    for (const file of files) {
+      const dataUrl = await fileToDataUrl(file);
+      await api("/api/subject-files", {
+        method: "POST",
+        body: JSON.stringify({
+          subject: state.selectedSubject,
+          folderId: state.selectedFolderId,
+          title: files.length === 1 && title ? title : file.name,
+          fileName: file.name,
+          mimeType: file.type || "application/octet-stream",
+          dataUrl
+        })
       })
-    });
+    }
     await loadData();
-    renderSubjectNotesPage();
+    renderFolderFilesPage();
   } catch (error) {
     alert(error.message || "File upload failed.");
     submitButton.disabled = false;
-    submitButton.textContent = "Save file";
+    submitButton.textContent = "Save files";
   }
 }
 
@@ -756,22 +799,23 @@ async function submitSubjectFolder(event) {
     })
   });
   await loadData();
-  renderSubjectNotesPage();
+  renderSubjectFilesPage();
 }
 
 async function deleteSubjectFile(fileId) {
   if (!confirm("Delete this uploaded file?")) return;
   await api(`/api/subject-files/${fileId}`, { method: "DELETE" });
   await loadData();
-  renderSubjectNotesPage();
+  renderFolderFilesPage();
 }
 
 async function deleteSubjectFolder(folderId) {
   if (!confirm("Delete this folder and files you uploaded inside it?")) return;
   await api(`/api/subject-folders/${folderId}`, { method: "DELETE" });
   state.selectedFolderId = "";
+  state.selectedFolderName = "Main folder";
   await loadData();
-  renderSubjectNotesPage();
+  renderSubjectFilesPage();
 }
 
 async function submitVideoFolder(event) {
@@ -846,6 +890,8 @@ async function render() {
     meetings: renderMeetingsPage,
     chat: renderChatPage,
     subjectNotes: renderSubjectNotesPage,
+    subjectFiles: renderSubjectFilesPage,
+    folderFiles: renderFolderFilesPage,
     videoLectures: renderVideoLecturesPage
   };
   (pages[state.route] || renderDashboard)();
