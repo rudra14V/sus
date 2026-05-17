@@ -62,24 +62,40 @@ function logout() {
 
 function renderLogin() {
   app.innerHTML = `
-    <main class="login-shell">
-      <form class="login-card" id="loginForm">
-        <h1>Work Manager</h1>
-        <p class="muted">Login with a verified ID created by the developer.</p>
-        <label class="field">
-          Verified ID
-          <input name="userId" autocomplete="username" placeholder="Enter verified ID" required />
-        </label>
-        <label class="field">
-          Password
-          <input name="password" type="password" autocomplete="current-password" placeholder="Enter password" required />
-        </label>
-        <p class="error" id="loginError"></p>
-        <button class="primary" type="submit">Login</button>
-        <p class="muted">Use the verified ID and password provided by the developer.</p>
-      </form>
+    <main class="login-night">
+      <section class="login-shell">
+        <form class="login-card" id="loginForm">
+          <section class="login-fields">
+            <span class="eyebrow">Work Manager</span>
+            <h2>Sign in to your night shift</h2>
+            <p class="muted">Verified IDs are issued by the administrator.</p>
+            <label class="field">
+              Verified ID
+              <input name="userId" id="loginUserId" autocomplete="username" placeholder="Enter verified ID" required />
+            </label>
+            <label class="field">
+              Password
+              <input name="password" type="password" autocomplete="current-password" placeholder="Enter password" required />
+            </label>
+            <p class="error" id="loginError"></p>
+            <button class="primary" type="submit">Login</button>
+          </section>
+        </form>
+      </section>
     </main>
   `;
+
+  document.querySelector("#loginUserId").addEventListener("input", event => {
+    const form = document.querySelector("#loginForm");
+    const value = event.target.value.trim().toLowerCase();
+    form.classList.remove("point-girl", "point-boy");
+    if ("cypher".startsWith(value) && value) {
+      form.classList.add("point-girl");
+    }
+    if ("jaguar".startsWith(value) && value) {
+      form.classList.add("point-boy");
+    }
+  });
 
   document.querySelector("#loginForm").addEventListener("submit", async event => {
     event.preventDefault();
