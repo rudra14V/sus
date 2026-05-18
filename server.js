@@ -5,8 +5,11 @@ const crypto = require("crypto");
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, "public");
-const DB_PATH = path.join(__dirname, "data", "db.json");
-const UPLOAD_DIR = path.join(__dirname, "uploads");
+const STORAGE_DIR = process.env.STORAGE_DIR || __dirname;
+const DATA_DIR = process.env.DATA_DIR || path.join(STORAGE_DIR, "data");
+const DB_PATH = path.join(DATA_DIR, "db.json");
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(STORAGE_DIR, "uploads");
+const SUBJECTS = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS", "WEBDEV"];
 
 function verifiedUsers() {
   if (process.env.VERIFIED_USERS_JSON) {
@@ -94,8 +97,7 @@ function createSeed() {
 }
 
 function ensureDb() {
-  const dataDir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   if (!fs.existsSync(DB_PATH)) fs.writeFileSync(DB_PATH, JSON.stringify(createSeed(), null, 2));
   syncVerifiedUsers();
@@ -375,8 +377,7 @@ function routeApi(req, res) {
 
   if (req.method === "POST" && url.pathname === "/api/subject-files") {
     return parseBody(req).then(body => {
-      const allowedSubjects = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS"];
-      if (!allowedSubjects.includes(body.subject)) {
+      if (!SUBJECTS.includes(body.subject)) {
         return sendJson(res, 400, { error: "Invalid subject." });
       }
       const fileId = id("file");
@@ -420,8 +421,7 @@ function routeApi(req, res) {
 
   if (req.method === "POST" && url.pathname === "/api/subject-folders") {
     return parseBody(req).then(body => {
-      const allowedSubjects = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS"];
-      if (!allowedSubjects.includes(body.subject)) {
+      if (!SUBJECTS.includes(body.subject)) {
         return sendJson(res, 400, { error: "Invalid subject." });
       }
       const folder = {
@@ -463,8 +463,7 @@ function routeApi(req, res) {
 
   if (req.method === "POST" && url.pathname === "/api/video-folders") {
     return parseBody(req).then(body => {
-      const allowedSubjects = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS"];
-      if (!allowedSubjects.includes(body.subject)) return sendJson(res, 400, { error: "Invalid subject." });
+      if (!SUBJECTS.includes(body.subject)) return sendJson(res, 400, { error: "Invalid subject." });
       const folder = {
         id: id("vfolder"),
         subject: body.subject,
@@ -497,8 +496,7 @@ function routeApi(req, res) {
 
   if (req.method === "POST" && url.pathname === "/api/video-links") {
     return parseBody(req).then(body => {
-      const allowedSubjects = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS"];
-      if (!allowedSubjects.includes(body.subject)) return sendJson(res, 400, { error: "Invalid subject." });
+      if (!SUBJECTS.includes(body.subject)) return sendJson(res, 400, { error: "Invalid subject." });
       const link = {
         id: id("vlink"),
         subject: body.subject,
