@@ -301,7 +301,7 @@ function renderNotesPage() {
 }
 
 function renderSubjectNotesPage() {
-  const subjects = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS"];
+  const subjects = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS", "WEBDEV"];
   layout(`
     ${pageTitle("Subject Notes", "Choose a subject folder.", "notes")}
     <section class="subject-folder-grid">
@@ -455,7 +455,7 @@ function renderSubjectFile(file) {
 }
 
 function renderVideoLecturesPage() {
-  const subjects = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS"];
+  const subjects = ["OS", "RANAC", "OOPS", "DBMS", "ADSA", "CHESS", "WEBDEV"];
   const folders = (state.data.videoFolders || []).filter(folder => folder.subject === state.selectedVideoSubject);
   const folderExists = folders.some(folder => folder.id === state.selectedVideoFolderId);
   if (state.selectedVideoFolderId && !folderExists) state.selectedVideoFolderId = "";

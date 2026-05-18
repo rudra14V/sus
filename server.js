@@ -20,13 +20,13 @@ function verifiedUsers() {
   return [
     {
       id: process.env.ADMIN_ID || "cypher",
-      password: process.env.ADMIN_PASSWORD || "change-me-admin",
+      password: process.env.ADMIN_PASSWORD || "chinni_bangaramm",
       name: process.env.ADMIN_NAME || "Cypher",
       role: "admin"
     },
     {
       id: process.env.MEMBER_ID || "jaguar",
-      password: process.env.MEMBER_PASSWORD || "change-me-member",
+      password: process.env.MEMBER_PASSWORD || "ammu_kutty",
       name: process.env.MEMBER_NAME || "Jaguar",
       role: "member"
     }
@@ -98,7 +98,30 @@ function ensureDb() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   if (!fs.existsSync(DB_PATH)) fs.writeFileSync(DB_PATH, JSON.stringify(createSeed(), null, 2));
+  syncVerifiedUsers();
   migrateSubjectFileStorage();
+}
+
+function syncVerifiedUsers() {
+  const db = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+  const currentUsers = verifiedUsers();
+  let changed = false;
+  db.users = db.users || [];
+  currentUsers.forEach(currentUser => {
+    const existing = db.users.find(user => user.id === currentUser.id);
+    if (existing) {
+      ["password", "name", "role"].forEach(key => {
+        if (existing[key] !== currentUser[key]) {
+          existing[key] = currentUser[key];
+          changed = true;
+        }
+      });
+    } else {
+      db.users.push(currentUser);
+      changed = true;
+    }
+  });
+  if (changed) writeDb(db);
 }
 
 function migrateSubjectFileStorage() {
